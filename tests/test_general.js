@@ -40,6 +40,56 @@ unit.add(module, [
 		eval(t.TEST("re2 instanceof RE2"));
 		compare(re1, re2, t);
 	},
+	function test_instErrors(t) {
+		try {
+			var re = new RE2([]);
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e instanceof TypeError"));
+		}
+
+		try {
+			var re = new RE2({});
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e instanceof TypeError"));
+		}
+
+		try {
+			var re = new RE2(new Date());
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e instanceof TypeError"));
+		}
+
+		try {
+			var re = new RE2(null);
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e instanceof TypeError"));
+		}
+
+		try {
+			var re = new RE2();
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e instanceof TypeError"));
+		}
+
+		try {
+			var re = RE2();
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e instanceof TypeError"));
+		}
+
+		try {
+			var re = RE2({ toString() { throw "corner"; } });
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e instanceof TypeError"));
+		}
+	},
 	function test_generalIn(t) {
 		"use strict";
 
@@ -52,9 +102,11 @@ unit.add(module, [
 		eval(t.TEST("'search' in re"));
 		eval(t.TEST("'split' in re"));
 		eval(t.TEST("'source' in re"));
+		eval(t.TEST("'flags' in re"));
 		eval(t.TEST("'global' in re"));
 		eval(t.TEST("'ignoreCase' in re"));
 		eval(t.TEST("'multiline' in re"));
+		eval(t.TEST("'sticky' in re"));
 		eval(t.TEST("'lastIndex' in re"));
 	},
 	function test_generalPresent(t) {
@@ -69,9 +121,11 @@ unit.add(module, [
 		eval(t.TEST("typeof re.search == 'function'"));
 		eval(t.TEST("typeof re.split == 'function'"));
 		eval(t.TEST("typeof re.source == 'string'"));
+		eval(t.TEST("typeof re.flags == 'string'"));
 		eval(t.TEST("typeof re.global == 'boolean'"));
 		eval(t.TEST("typeof re.ignoreCase == 'boolean'"));
 		eval(t.TEST("typeof re.multiline == 'boolean'"));
+		eval(t.TEST("typeof re.sticky == 'boolean'"));
 		eval(t.TEST("typeof re.lastIndex == 'number'"));
 	},
 	function test_generalLastIndex(t) {
@@ -139,12 +193,71 @@ unit.add(module, [
 		var b = new Buffer(s);
 		eval(t.TEST("b.length === 13"));
 		eval(t.TEST("RE2.getUtf16Length(b) === 7"));
+
+		var s2 = "\u{1F603}";
+
+		eval(t.TEST("s2.length === 2"));
+		eval(t.TEST("RE2.getUtf8Length(s2) === 4"));
+
+		var b2 = new Buffer(s2);
+
+		eval(t.TEST("b2.length === 4"));
+		eval(t.TEST("RE2.getUtf16Length(b2) === 2"));
+
+		var s3 = "\uD83D";
+
+		eval(t.TEST("s3.length === 1"));
+		eval(t.TEST("RE2.getUtf8Length(s3) === 3"));
+
+		var b3 = new Buffer([0xF0]);
+
+		eval(t.TEST("b3.length === 1"));
+		eval(t.TEST("RE2.getUtf16Length(b3) === 2"));
+
+		try {
+			RE2.getUtf8Length({ toString() { throw "corner"; } });
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e === 'corner'"));
+		}
+
+		eval(t.TEST("RE2.getUtf16Length({ toString() { throw 'corner'; } }) === -1"));
 	},
-	function test_sourceTranslation(t) {
+	function test_flags(t) {
 		"use strict";
 
-		var re = new RE2("a\\cM\\u34\\u1234\\u10abcdz");
-		eval(t.TEST("re.source === 'a\\\\x0D\\\\x{34}\\\\x{1234}\\\\x{10ab}cdz'"));
+		var re = new RE2("a", "u");
+		eval(t.TEST("re.flags === 'u'"));
+
+		re = new RE2("a", "iu");
+		eval(t.TEST("re.flags === 'iu'"));
+
+		re = new RE2("a", "mu");
+		eval(t.TEST("re.flags === 'mu'"));
+
+		re = new RE2("a", "gu");
+		eval(t.TEST("re.flags === 'gu'"));
+
+		re = new RE2("a", "yu");
+		eval(t.TEST("re.flags === 'uy'"));
+
+		re = new RE2("a", "yiu");
+		eval(t.TEST("re.flags === 'iuy'"));
+
+		re = new RE2("a", "yigu");
+		eval(t.TEST("re.flags === 'giuy'"));
+
+		re = new RE2("a", "miu");
+		eval(t.TEST("re.flags === 'imu'"));
+
+		re = new RE2("a", "ygu");
+		eval(t.TEST("re.flags === 'guy'"));
+
+		re = new RE2("a", "myu");
+		eval(t.TEST("re.flags === 'muy'"));
+
+		re = new RE2("a", "migyu");
+		eval(t.TEST("re.flags === 'gimuy'"));
 	}
 ]);
 
@@ -157,4 +270,6 @@ function compare(re1, re2, t) {
 	eval(t.TEST("re1.global === re2.global"));
 	eval(t.TEST("re1.ignoreCase === re2.ignoreCase"));
 	eval(t.TEST("re1.multiline  === re2.multiline"));
+	// eval(t.TEST("re1.unicode    === re2.unicode"));
+	eval(t.TEST("re1.sticky     === re2.sticky"));
 }

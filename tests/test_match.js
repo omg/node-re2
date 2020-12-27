@@ -35,6 +35,32 @@ unit.add(module, [
 
 		eval(t.TEST("t.unify(result, ['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e'])"));
 	},
+	function test_matchFail(t) {
+		"use strict";
+
+		var re = new RE2("(a+)?(b+)?");
+		var result = re.match("aaabb");
+
+		eval(t.TEST("result[1] === 'aaa'"));
+		eval(t.TEST("result[2] === 'bb'"));
+
+		result = re.match("aaacbb");
+
+		eval(t.TEST("result[1] === 'aaa'"));
+		eval(t.TEST("result[2] === undefined"));
+	},
+	function test_matchInvalid(t) {
+		"use strict";
+
+		var re = RE2('');
+
+		try {
+			re.match({ toString() { throw "corner"; } });
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e === 'corner'"));
+		}
+	},
 
 	// Unicode tests
 
@@ -76,5 +102,36 @@ unit.add(module, [
 		eval(t.TEST("result[0].toString() === 'ГЛАВА 3.4.5.1'"));
 		eval(t.TEST("result[1].toString() === 'ГЛАВА 3.4.5.1'"));
 		eval(t.TEST("result[2].toString() === '.1'"));
+	},
+
+	// Sticky tests
+
+	function test_matchSticky(t) {
+		"use strict";
+
+		var re = new RE2("\\s+", "y");
+
+		eval(t.TEST("re.match('Hello world, how are you?') === null"));
+
+		re.lastIndex = 5;
+
+		var result = re.match("Hello world, how are you?");
+
+		eval(t.TEST("t.unify(result, [' '])"));
+		eval(t.TEST("result.index === 5"));
+		eval(t.TEST("re.lastIndex === 6"));
+
+		var re2 = new RE2("\\s+", "gy");
+
+		eval(t.TEST("re2.match('Hello world, how are you?') === null"));
+
+		re2.lastIndex = 5;
+
+		eval(t.TEST("re2.match('Hello world, how are you?') === null"));
+
+		var re3 = new RE2(/[A-E]/giy);
+		var result3 = re3.match("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+
+		eval(t.TEST("t.unify(result3, ['A', 'B', 'C', 'D', 'E'])"));
 	}
 ]);

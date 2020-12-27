@@ -33,6 +33,26 @@ unit.add(module, [
 		eval(t.TEST("re.test('This is a hello world!')"));
 		eval(t.TEST("!re.test('This is a Hello world!')"));
 	},
+	function test_testSucc(t) {
+		"use strict";
+
+		var str = "abbcdefabh";
+
+		var re = new RE2("ab*", "g");
+		var result = re.test(str);
+
+		eval(t.TEST("result"));
+		eval(t.TEST("re.lastIndex === 3"));
+
+		result = re.test(str);
+
+		eval(t.TEST("result"));
+		eval(t.TEST("re.lastIndex === 9"));
+
+		result = re.test(str);
+
+		eval(t.TEST("!result"));
+	},
 	function test_testSimple(t) {
 		"use strict";
 
@@ -49,6 +69,54 @@ unit.add(module, [
 		var re3 = new RE2("abc");
 
 		eval(t.TEST("!re3.test(str)"));
+	},
+	function test_testAnchoredToBeginning(t) {
+		"use strict";
+
+		var re = RE2('^hello', 'g');
+
+		eval(t.TEST("re.test('hellohello')"));
+		eval(t.TEST("!re.test('hellohello')"));
+	},
+	function test_testInvalid(t) {
+		"use strict";
+
+		var re = RE2('');
+
+		try {
+			re.test({ toString() { throw "corner"; } });
+			t.test(false); // shouldn't be here
+		} catch(e) {
+			eval(t.TEST("e === 'corner'"));
+		}
+	},
+	function test_testAnchor1(t) {
+		"use strict";
+
+		var re = new RE2("b|^a", "g");
+
+		var result = re.test("aabc");
+		eval(t.TEST("result"));
+		eval(t.TEST("re.lastIndex === 1"));
+
+		result = re.test("aabc");
+		eval(t.TEST("result"));
+		eval(t.TEST("re.lastIndex === 3"));
+
+		result = re.test("aabc");
+		eval(t.TEST("!result"));
+	},
+	function test_testAnchor2(t) {
+		"use strict";
+
+		var re = new RE2("(?:^a)", "g");
+
+		var result = re.test("aabc");
+		eval(t.TEST("result"));
+		eval(t.TEST("re.lastIndex === 1"));
+
+		result = re.test("aabc");
+		eval(t.TEST("!result"));
 	},
 
 	// Unicode tests
@@ -74,6 +142,26 @@ unit.add(module, [
 		eval(t.TEST("re.test('Это просто привет всем.')"));
 		eval(t.TEST("!re.test('Это просто Привет всем.')"));
 	},
+	function test_testUnicodeSubsequent(t) {
+		"use strict";
+
+		var str = "аббвгдеабё";
+
+		var re = new RE2("аб*", "g");
+		var result = re.test(str);
+
+		eval(t.TEST("result"));
+		eval(t.TEST("re.lastIndex === 3"));
+
+		result = re.test(str);
+
+		eval(t.TEST("result"));
+		eval(t.TEST("re.lastIndex === 9"));
+
+		result = re.test(str);
+
+		eval(t.TEST("!result"));
+	},
 
 	// Buffer tests
 
@@ -97,5 +185,29 @@ unit.add(module, [
 
 		eval(t.TEST("re.test(new Buffer('Это просто привет всем.'))"));
 		eval(t.TEST("!re.test(new Buffer('Это просто Привет всем.'))"));
+	},
+
+	// Sticky tests
+
+	function test_testSticky(t) {
+		"use strict";
+
+		var re = new RE2("\\s+", "y");
+
+		eval(t.TEST("!re.test('Hello world, how are you?')"));
+
+		re.lastIndex = 5;
+
+		eval(t.TEST("re.test('Hello world, how are you?')"));
+		eval(t.TEST("re.lastIndex === 6"));
+
+		var re2 = new RE2("\\s+", "gy");
+
+		eval(t.TEST("!re2.test('Hello world, how are you?')"));
+
+		re2.lastIndex = 5;
+
+		eval(t.TEST("re2.test('Hello world, how are you?')"));
+		eval(t.TEST("re2.lastIndex === 6"));
 	}
 ]);

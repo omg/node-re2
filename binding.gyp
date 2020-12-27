@@ -45,17 +45,20 @@
         "-Wno-sign-compare",
         "-Wno-unused-parameter",
         "-Wno-missing-field-initializers",
+        "-Wno-cast-function-type",
         "-O3",
         "-g"
       ],
       "defines": [
-        "NDEBUG"
+        "NDEBUG",
+        "NOMINMAX"
       ],
       "include_dirs": [
         "<!(node -e \"require('nan')\")",
         "vendor"
       ],
       "xcode_settings": {
+        "MACOSX_DEPLOYMENT_TARGET": "10.7",
         "CLANG_CXX_LANGUAGE_STANDARD": "c++11",
         "CLANG_CXX_LIBRARY": "libc++",
         "OTHER_CFLAGS": [

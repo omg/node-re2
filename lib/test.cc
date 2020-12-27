@@ -1,71 +1,68 @@
 #include "./wrapped_re2.h"
+#include "./util.h"
 
 #include <vector>
 
 #include <node_buffer.h>
 
-
-using std::vector;
-
-using v8::Local;
-using v8::String;
-
-
-NAN_METHOD(WrappedRE2::Test) {
+NAN_METHOD(WrappedRE2::Test)
+{
 
 	// unpack arguments
 
-	WrappedRE2* re2 = Nan::ObjectWrap::Unwrap<WrappedRE2>(info.This());
-	if (!re2) {
+	auto re2 = Nan::ObjectWrap::Unwrap<WrappedRE2>(info.This());
+	if (!re2)
+	{
 		info.GetReturnValue().Set(false);
 		return;
 	}
 
-	vector<char> buffer;
+	StrVal str = info[0];
+	if (!str.data)
+	{
+		return;
+	}
 
-	char*  data;
-	size_t size, lastIndex = 0;
-	bool   isBuffer = false;
+	size_t lastIndex = 0;
 
-	if (node::Buffer::HasInstance(info[0])) {
-		isBuffer = true;
-		size = node::Buffer::Length(info[0]);
-		if (re2->global) {
-			if (re2->lastIndex > size) {
+	if (str.isBuffer)
+	{
+		if ((re2->global || re2->sticky) && re2->lastIndex)
+		{
+			if (re2->lastIndex > str.size)
+			{
 				re2->lastIndex = 0;
 				info.GetReturnValue().Set(false);
 				return;
 			}
 			lastIndex = re2->lastIndex;
 		}
-		data = node::Buffer::Data(info[0]);
-	} else {
-		if (re2->global && re2->lastIndex) {
-			String::Value s(info[0]->ToString());
-			if (re2->lastIndex > s.length()) {
+	}
+	else
+	{
+		if ((re2->global || re2->sticky) && re2->lastIndex)
+		{
+			if (re2->lastIndex > str.length)
+			{
 				re2->lastIndex = 0;
 				info.GetReturnValue().Set(false);
 				return;
 			}
-			Local<String> t(Nan::New(*s + re2->lastIndex).ToLocalChecked());
-			buffer.resize(t->Utf8Length() + 1);
-			t->WriteUtf8(&buffer[0]);
-		} else {
-			Local<String> t(info[0]->ToString());
-			buffer.resize(t->Utf8Length() + 1);
-			t->WriteUtf8(&buffer[0]);
+			for (size_t n = re2->lastIndex; n; --n)
+			{
+				lastIndex += getUtf8CharSize(str.data[lastIndex]);
+			}
 		}
-		size = buffer.size() - 1;
-		data = &buffer[0];
 	}
 
 	// actual work
 
-	if (re2->global) {
-		StringPiece match;
-		if (re2->regexp.Match(StringPiece(data, size), lastIndex, size, RE2::UNANCHORED, &match, 1)) {
-			re2->lastIndex += isBuffer ? match.data() - data + match.size() - lastIndex :
-				getUtf16Length(data, match.data() + match.size());
+	if (re2->global || re2->sticky)
+	{
+		re2::StringPiece match;
+		if (re2->regexp.Match(str, lastIndex, str.size, re2->sticky ? re2::RE2::ANCHOR_START : re2::RE2::UNANCHORED, &match, 1))
+		{
+			re2->lastIndex += str.isBuffer ? match.data() - str.data + match.size() - lastIndex : getUtf16Length(str.data + lastIndex, match.data() + match.size());
 			info.GetReturnValue().Set(true);
 			return;
 		}
@@ -74,5 +71,5 @@ NAN_METHOD(WrappedRE2::Test) {
 		return;
 	}
 
-	info.GetReturnValue().Set(re2->regexp.Match(StringPiece(data, size), 0, size, RE2::UNANCHORED, NULL, 0));
+	info.GetReturnValue().Set(re2->regexp.Match(str, lastIndex, str.size, re2::RE2::UNANCHORED, NULL, 0));
 }
