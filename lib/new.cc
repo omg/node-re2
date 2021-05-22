@@ -379,9 +379,9 @@ NAN_METHOD(WrappedRE2::New)
 	options.set_log_errors(false);	  // inappropriate when embedding
 
 	if (info.Length() >= 3 && info[2]->IsObject()) {
-		auto max_mem = info[2]->ToObject()->Get(Nan::New("max_mem").ToLocalChecked());
+		auto max_mem = info[2]->ToObject(context).ToLocalChecked()->Get(context, Nan::New("max_mem").ToLocalChecked());
 		if (!max_mem.IsEmpty()) {
-			options.set_max_mem(max_mem.ToLocalChecked()->IntegerValue());
+			options.set_max_mem(max_mem.ToLocalChecked()->IntegerValue(context).ToChecked());
 		}
 	}
 
