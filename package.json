@@ -1,6 +1,6 @@
 {
   "name": "re2",
-  "version": "1.16.0-omg",
+  "version": "1.16.0-omg1",
   "description": "Bindings for RE2: fast, safe alternative to backtracking regular expression engines.",
   "homepage": "https://github.com/omg/node-re2",
   "bugs": "https://github.com/omg/node-re2/issues",
